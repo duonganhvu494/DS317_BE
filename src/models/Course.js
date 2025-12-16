@@ -1,29 +1,42 @@
 import mongoose from "mongoose";
 
-const CourseSchema = new mongoose.Schema({
-  _id: String, // course_id
+const CourseSchema = new mongoose.Schema(
+  {
+    _id: String,
 
-  school_ranking: Number,
-  teacher_rate: Number,
+    name: String,
+    name_en: String,
 
-  num_resource: Number,
-  num_videos: Number,
-  num_chapters: Number,
-  num_subchapters: Number,
-  course_duration: Number,
+    field: [String],
+    field_en: [String],
 
-  num_concepts: Number,
-  num_ex: Number,
-  num_problem: Number,
+    about: String,
+    about_en: String,
 
-  score_title: Number,
-  score_org: Number,
+    school: [String],
+    teacher: [String],
 
-  feat_bio_len: Number,
-  feat_has_research: Boolean,
-  feat_is_top_grad: Boolean,
+    course_duration: Number,
 
-  final_rank: Number
-}, { versionKey: false });
+    sentiment_index: Number,
+    completion_rate: Number,
+    video_engagement: Number,
+    exercise_engagement: Number,
+
+    school_ranking: Number,
+    teacher_rate: Number,
+
+    cluster: Number,
+    final_rank: Number,
+
+    num_students: {
+      enroll: Number,
+      dropout: Number
+    },
+
+    sum_relative_week: Number
+  },
+  { timestamps: true }
+);
 
 export default mongoose.model("Course", CourseSchema);
