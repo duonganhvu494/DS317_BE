@@ -4,7 +4,8 @@ import connectDB from "./src/config/db.js";
 import cors from "cors";
 
 import courseRoutes from "./src/routes/course.route.js";
-import courseWeekRoutes from "./src/routes/courseWeek.route.js";
+import analyticsRoutes from "./src/routes/analytics.route.js";
+import courseDetailRoutes from "./src/routes/courseDetail.route.js"
 
 dotenv.config();
 
@@ -22,8 +23,8 @@ connectDB();
 
 // ===== ROUTES =====
 app.use("/courses", courseRoutes);
-app.use("/coursesWeek", courseWeekRoutes);
-
+app.use("/analytics", analyticsRoutes);
+app.use("/course", courseDetailRoutes)
 // ===== START SERVER =====
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

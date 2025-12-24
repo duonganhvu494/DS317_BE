@@ -16,40 +16,74 @@ export async function getAllCourses(req, res) {
       limit = 20,
       field,
       school,
+      search,
+      sortBy = "name_en",
+      sortOrder = "asc"
     } = req.query;
 
-    console.log(req.query);
+    // ===== FILTER =====
     const filter = {};
 
     if (field) filter.field_en = field;
     if (school) filter.school = school;
 
-    const skip = (Number(page) - 1) * Number(limit);
+    // ===== SEARCH =====
+    if (search) {
+      filter.name_en = {
+        $regex: search,
+        $options: "i"
+      };
+    }
+
+    // ===== SORT (WHITELIST) =====
+    const SORT_FIELDS = [
+      "name_en",
+      "completion_rate",
+      "sentiment_index",
+      "final_rank",
+      "num_students"
+    ];
+
+    const sortField = SORT_FIELDS.includes(sortBy)
+      ? sortBy
+      : "name_en";
+
+    const sort = {
+      [sortField]: sortOrder === "desc" ? -1 : 1
+    };
+
+    // ===== PAGINATION =====
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
+    const skip = (pageNum - 1) * limitNum;
 
     const [courses, total] = await Promise.all([
       Course.find(filter)
         .select(
           "_id name_en field_en school teacher completion_rate sentiment_index final_rank num_students"
         )
+        .sort(sort)
         .skip(skip)
-        .limit(Number(limit))
-        .lean(),           
+        .limit(limitNum)
+        .lean(),
       Course.countDocuments(filter)
     ]);
 
     res.json({
       data: courses,
       pagination: {
-        page: Number(page),
-        limit: Number(limit),
+        page: pageNum,
+        limit: limitNum,
         total,
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(total / limitNum)
       }
     });
   } catch (err) {
+    console.error("getAllCourses error:", err);
     res.status(500).json({ message: err.message });
   }
 }
+
 
 /**
  * GET /api/courses/:id
@@ -58,7 +92,6 @@ export async function getAllCourses(req, res) {
 export async function getCourseById(req, res) {
   try {
     const course = await Course.findById(req.params.id);
-
     if (!course) {
       return res.status(404).json({ message: "Course not found" });
     }
@@ -68,6 +101,53 @@ export async function getCourseById(req, res) {
     res.status(500).json({ message: err.message });
   }
 }
+export const getCourses = async (req, res) => {
+  try {
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.min(Number(req.query.limit) || 20, 100);
+    const search = req.query.search?.trim() || "";
+    const sortBy = req.query.sortBy || "name_en";
+    const sortOrder = req.query.sortOrder === "desc" ? -1 : 1;
+
+    const skip = (page - 1) * limit;
+
+    // ===== SEARCH QUERY =====
+    const query = search
+      ? {
+          name_en: { $regex: search, $options: "i" }
+        }
+      : {};
+
+    // ===== SORT =====
+    const sort = {
+      [sortBy]: sortOrder
+    };
+
+    // ===== QUERY DB =====
+    const [data, total] = await Promise.all([
+      Course.find(query)
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Course.countDocuments(query)
+    ]);
+
+    return res.json({
+      data,
+      pagination: {
+        page,
+        limit,
+        total
+      }
+    });
+  } catch (err) {
+    console.error("GET /courses error:", err);
+    return res.status(500).json({
+      message: "Internal server error"
+    });
+  }
+};
 
 /**
  * GET /api/courses/filter?field=&school=
